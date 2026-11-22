@@ -965,24 +965,28 @@
         localStorage.setItem('vanguard_app_version', APP_VERSION);
     }
 
-    // Force Manual Cache Wipe & Refresh button
-    const btnForceRefresh = document.getElementById('btnForceRefresh');
-    if (btnForceRefresh) {
-        btnForceRefresh.addEventListener('click', async () => {
-            showToast('⚡ Purging cache & reloading...', 1500);
-            if ('caches' in window) {
-                const keys = await caches.keys();
-                await Promise.all(keys.map(k => caches.delete(k)));
-            }
-            if ('serviceWorker' in navigator) {
-                const regs = await navigator.serviceWorker.getRegistrations();
-                for (let r of regs) await r.unregister();
-            }
-            setTimeout(() => {
-                window.location.href = window.location.pathname + '?nocache=' + Date.now();
-            }, 300);
-        });
+    // Force Manual Cache Wipe & Refresh helper
+    async function forceAppRefresh() {
+        showToast('⚡ Purging cache & reloading...', 1500);
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            for (let r of regs) await r.unregister();
+        }
+        localStorage.removeItem('vanguard_app_version');
+        setTimeout(() => {
+            window.location.href = window.location.pathname + '?nocache=' + Date.now();
+        }, 300);
     }
+
+    const btnForceRefresh = document.getElementById('btnForceRefresh');
+    if (btnForceRefresh) btnForceRefresh.addEventListener('click', forceAppRefresh);
+
+    const btnPinRefresh = document.getElementById('btnPinRefresh');
+    if (btnPinRefresh) btnPinRefresh.addEventListener('click', forceAppRefresh);
 
     // Fit / Crop Toggle
     let isFitContain = false;

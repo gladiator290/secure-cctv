@@ -2,3 +2,6 @@ node_modules/
 .ssl/
 .system_generated/
 *.log
+apk_output/
+apk_output_v2/
+*.zip

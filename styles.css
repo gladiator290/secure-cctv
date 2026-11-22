@@ -359,6 +359,14 @@ html, body {
     gap: 4px;
 }
 
+.pin-refresh-pill {
+    position: absolute;
+    top: max(14px, var(--safe-top));
+    right: 14px;
+    z-index: 100001;
+    background: rgba(255, 255, 255, 0.08);
+}
+
 /* ==========================================================
    ROLE SELECTION HUB
    ========================================================== */

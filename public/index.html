@@ -3,232 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secure CCTV & Dashboard</title>
+    <title>Secure CCTV & Remote Monitor</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#090d16">
+    <meta name="theme-color" content="#06080e">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- PIN Lock Screen -->
+    <!-- PIN Security Lock Screen -->
     <div id="pinScreen" class="overlay-screen active">
-        <div class="pin-card">
-            <div class="app-brand">
-                <div class="brand-icon">🛡️</div>
-                <h2>Secure CCTV</h2>
-                <p id="pinSubtext">Enter Master PIN to continue</p>
+        <div class="pin-card glass-panel">
+            <div class="brand-shield">
+                <div class="shield-halo"></div>
+                <div class="shield-inner">🛡️</div>
             </div>
-            <div class="pin-display">
+            <h2 id="pinTitle">SECURE CCTV</h2>
+            <p id="pinSubtext">Enter 4-Digit Security Master PIN</p>
+
+            <div class="pin-indicator-box">
                 <span class="pin-dot" id="dot1"></span>
                 <span class="pin-dot" id="dot2"></span>
                 <span class="pin-dot" id="dot3"></span>
                 <span class="pin-dot" id="dot4"></span>
             </div>
-            <div class="numpad">
-                <button class="num-btn" data-val="1">1</button>
-                <button class="num-btn" data-val="2">2</button>
-                <button class="num-btn" data-val="3">3</button>
-                <button class="num-btn" data-val="4">4</button>
-                <button class="num-btn" data-val="5">5</button>
-                <button class="num-btn" data-val="6">6</button>
-                <button class="num-btn" data-val="7">7</button>
-                <button class="num-btn" data-val="8">8</button>
-                <button class="num-btn" data-val="9">9</button>
-                <button class="num-btn action-btn" id="btnPinClear">C</button>
-                <button class="num-btn" data-val="0">0</button>
-                <button class="num-btn action-btn" id="btnPinBackspace">⌫</button>
+
+            <div class="numpad-grid">
+                <button class="num-key" data-val="1">1</button>
+                <button class="num-key" data-val="2">2</button>
+                <button class="num-key" data-val="3">3</button>
+                <button class="num-key" data-val="4">4</button>
+                <button class="num-key" data-val="5">5</button>
+                <button class="num-key" data-val="6">6</button>
+                <button class="num-key" data-val="7">7</button>
+                <button class="num-key" data-val="8">8</button>
+                <button class="num-key" data-val="9">9</button>
+                <button class="num-key fn-key" id="btnPinClear">CLR</button>
+                <button class="num-key" data-val="0">0</button>
+                <button class="num-key fn-key" id="btnPinBackspace">⌫</button>
             </div>
-            <p id="pinError" class="error-msg"></p>
+            <p id="pinError" class="pin-error-feedback"></p>
         </div>
     </div>
 
-    <!-- Main Container -->
-    <div id="appContainer" class="app-container">
-        <!-- Notification Toast -->
-        <div id="toast" class="toast"></div>
+    <!-- Main Application Wrapper -->
+    <div id="appContainer" class="app-viewport">
+        <!-- Floating Toast Notification -->
+        <div id="toast" class="floating-toast"></div>
 
-        <!-- SCREEN 1: Role Selection -->
-        <section id="roleScreen" class="screen active">
-            <header class="app-header">
-                <div class="header-brand">
-                    <span class="badge-dot pulse"></span>
-                    <h1>Personal CCTV</h1>
+        <!-- ===================================== -->
+        <!-- SCREEN 1: Role Selection Hub          -->
+        <!-- ===================================== -->
+        <section id="roleScreen" class="view-screen active">
+            <header class="top-nav">
+                <div class="brand-title">
+                    <span class="status-orb pulse-emerald"></span>
+                    <div>
+                        <h1>VANGUARD SECURE</h1>
+                        <span class="sub-label">P2P ENCRYPTED SURVEILLANCE</span>
+                    </div>
                 </div>
-                <button id="btnLockApp" class="icon-btn" title="Lock App">🔒</button>
+                <button id="btnLockApp" class="glass-icon-btn" title="Lock App">🔒</button>
             </header>
 
-            <div class="role-selector">
-                <div class="info-banner">
-                    <span class="info-icon">☁️</span>
-                    <span><b>Serverless Cloud P2P:</b> No home computer or laptop needed! Works 24/7.</span>
+            <main class="role-hub-content">
+                <div class="system-status-pill">
+                    <span class="orb-icon">🌐</span>
+                    <span>Direct Cloud P2P Active • No Home Server Needed</span>
                 </div>
 
-                <div class="role-card" id="cardChooseCCTV">
-                    <div class="role-icon-box cctv-box">📹</div>
-                    <div class="role-content">
-                        <h3>CCTV Camera Mode</h3>
-                        <p>Keep this phone in your room/gate to broadcast live video & audio 24/7.</p>
-                        <ul class="role-features">
-                            <li>✓ Works with screen black (Stealth mode)</li>
-                            <li>✓ Motion detection alerts</li>
-                            <li>✓ Remote flashlight & switch camera</li>
-                        </ul>
+                <div class="role-cards-wrapper">
+                    <!-- CCTV Card -->
+                    <div class="role-hero-card cctv-gradient" id="cardChooseCCTV">
+                        <div class="card-glow-layer"></div>
+                        <div class="card-top">
+                            <div class="icon-orb camera-orb">📹</div>
+                            <span class="mode-tag">TRANSMITTER</span>
+                        </div>
+                        <h2>CCTV Camera Node</h2>
+                        <p>Turn this spare phone into an intelligent surveillance camera broadcasting 24/7 on your home Wi-Fi.</p>
+                        <div class="spec-pills">
+                            <span>🌙 Stealth OLED Mode</span>
+                            <span>⚡ WakeLock 24/7</span>
+                            <span>🚨 Motion Sensor</span>
+                        </div>
+                        <button class="cta-btn primary-btn" id="btnStartCCTVMode">
+                            <span>Deploy as Camera</span>
+                            <span class="arrow">→</span>
+                        </button>
                     </div>
-                    <button class="btn btn-primary" id="btnStartCCTVMode">Start as CCTV Camera →</button>
-                </div>
 
-                <div class="role-card" id="cardChooseDashboard">
-                    <div class="role-icon-box dash-box">📱</div>
-                    <div class="role-content">
-                        <h3>Dashboard Viewer Mode</h3>
-                        <p>View your paired CCTV cameras from anywhere on 4G/5G or any Wi-Fi.</p>
-                        <ul class="role-features">
-                            <li>✓ Zero-latency direct P2P stream</li>
-                            <li>✓ Remote camera controls</li>
-                            <li>✓ Instant intruder alert buzzer</li>
-                        </ul>
+                    <!-- Dashboard Card -->
+                    <div class="role-hero-card dashboard-gradient" id="cardChooseDashboard">
+                        <div class="card-glow-layer"></div>
+                        <div class="card-top">
+                            <div class="icon-orb viewer-orb">📱</div>
+                            <span class="mode-tag">RECEIVER</span>
+                        </div>
+                        <h2>Command Dashboard</h2>
+                        <p>Monitor your paired cameras from anywhere in the world on 4G, 5G or any external Wi-Fi network.</p>
+                        <div class="spec-pills">
+                            <span>🔒 Zero Latency P2P</span>
+                            <span>🔦 Remote Torch</span>
+                            <span>📸 Live Snapshots</span>
+                        </div>
+                        <button class="cta-btn secondary-btn" id="btnStartDashboardMode">
+                            <span>Open Dashboard</span>
+                            <span class="arrow">→</span>
+                        </button>
                     </div>
-                    <button class="btn btn-secondary" id="btnStartDashboardMode">Open Monitor Dashboard →</button>
                 </div>
-            </div>
+            </main>
         </section>
 
-        <!-- SCREEN 2: CCTV Camera Mode View -->
-        <section id="cctvScreen" class="screen">
-            <div class="cctv-viewport">
+        <!-- ===================================== -->
+        <!-- SCREEN 2: CCTV Camera Mode View       -->
+        <!-- ===================================== -->
+        <section id="cctvScreen" class="view-screen">
+            <div class="viewport-canvas">
                 <video id="cctvVideo" autoplay playsinline muted></video>
-                <canvas id="motionCanvas" class="hidden-canvas"></canvas>
+                <canvas id="motionCanvas" class="hidden-element"></canvas>
 
-                <!-- CCTV Top Bar -->
-                <div class="cctv-topbar">
-                    <div class="cam-badge">
-                        <span class="badge-dot pulse-red"></span>
-                        <span id="cctvCodeBadge">CAM-0000</span>
+                <!-- Professional Camera HUD -->
+                <div class="cctv-hud-header">
+                    <div class="hud-pill red-border">
+                        <span class="rec-dot"></span>
+                        <span class="hud-text">LIVE REC</span>
+                        <span class="mono-badge" id="cctvCodeBadge">CAM-0000</span>
                     </div>
-                    <div class="viewer-count-pill" id="viewerCountPill">
-                        👁️ <span id="viewerCount">0</span> Viewers
+
+                    <div class="hud-pill center-pill">
+                        <span class="hud-label">VIEWERS:</span>
+                        <span class="hud-val" id="viewerCount">0</span>
                     </div>
-                    <button id="btnToggleQR" class="glass-pill" title="Show Pairing QR">
-                        <span>📲 Pair QR</span>
+
+                    <button id="btnToggleQR" class="hud-pill action-pill" title="Show Pairing Code">
+                        <span>📲 PAIR QR</span>
                     </button>
                 </div>
 
-                <!-- CCTV Pairing QR Card Overlay -->
-                <div id="cctvQROverlay" class="qr-overlay hidden">
-                    <div class="qr-card">
-                        <div class="qr-header">
-                            <h4>Pair with Dashboard</h4>
-                            <button id="btnCloseQR" class="close-btn">✕</button>
+                <!-- Stream Telemetry Overlay -->
+                <div class="cctv-telemetry">
+                    <span id="cctvResDisplay">720p HD</span> •
+                    <span id="cctvFpsDisplay">25 FPS</span> •
+                    <span class="secure-tag">E2E ENCRYPTED</span>
+                </div>
+
+                <!-- Floating QR Pairing Overlay Card -->
+                <div id="cctvQROverlay" class="hud-overlay-modal hidden">
+                    <div class="hud-modal-card glass-panel">
+                        <div class="modal-card-top">
+                            <h3>DEVICE PAIRING</h3>
+                            <button id="btnCloseQR" class="close-x-btn">✕</button>
                         </div>
-                        <p class="qr-subtitle">Scan this QR code from the Dashboard phone on the same Wi-Fi.</p>
-                        <div class="qr-img-box">
-                            <img id="cctvQRImage" alt="Pairing QR Code">
+                        <p class="qr-info-p">Scan this QR code from your Dashboard phone while on the same Wi-Fi.</p>
+                        <div class="qr-frame-box">
+                            <img id="cctvQRImage" alt="Camera Pairing QR Code">
                         </div>
-                        <div class="qr-credentials">
-                            <div><b>Camera Code:</b> <span id="cctvCodeText">...</span></div>
-                            <div><b>Secret Key:</b> <span id="cctvSecretText">...</span></div>
+                        <div class="qr-details-block">
+                            <div class="detail-row">
+                                <span class="d-label">Camera Code:</span>
+                                <span class="d-val" id="cctvCodeText">...</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="d-label">Secret Key:</span>
+                                <span class="d-val" id="cctvSecretText">...</span>
+                            </div>
                         </div>
-                        <p class="qr-note">Once paired, you can view this camera from ANY network (4G/5G) with zero laptop needed.</p>
+                        <span class="e2e-foot">Once paired, works anywhere over 4G/5G without laptop.</span>
                     </div>
                 </div>
 
-                <!-- CCTV Bottom Controls -->
-                <div class="cctv-bottombar">
-                    <button id="btnCCTVStealth" class="btn-control highlight" title="Stealth / Black Screen Mode">
-                        🌙 Stealth Mode
+                <!-- CCTV Control Dock -->
+                <div class="cctv-dock-bar">
+                    <button id="btnCCTVStealth" class="dock-pill highlight-pill" title="Blank screen for stealth battery saving">
+                        <span class="icon">🌙</span>
+                        <span class="label">Stealth Mode</span>
                     </button>
-                    <button id="btnCCTVTorch" class="btn-control" title="Toggle Flashlight">
-                        🔦 Flash
+                    <button id="btnCCTVTorch" class="dock-pill" title="Toggle Flashlight">
+                        <span class="icon">🔦</span>
+                        <span class="label">Torch</span>
                     </button>
-                    <button id="btnCCTVFlip" class="btn-control" title="Switch Front/Back Camera">
-                        🔄 Flip
+                    <button id="btnCCTVFlip" class="dock-pill" title="Switch Lens">
+                        <span class="icon">🔄</span>
+                        <span class="label">Flip</span>
                     </button>
-                    <button id="btnCCTVStop" class="btn-control danger" title="Stop CCTV">
-                        ⏹ Stop
+                    <button id="btnCCTVStop" class="dock-pill danger-pill" title="Stop Surveillance">
+                        <span class="icon">⏹</span>
+                        <span class="label">Stop</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Stealth Mode Screen (Pure Black for battery saving and screen-off imitation) -->
-            <div id="stealthScreen" class="stealth-screen hidden">
-                <div class="stealth-clock" id="stealthClock">00:00</div>
-                <div class="stealth-indicator">
-                    <span class="stealth-dot"></span> CCTV Active
+            <!-- Stealth Mode Screen (OLED 100% Black Screen) -->
+            <div id="stealthScreen" class="oled-stealth-layer hidden">
+                <div class="ambient-clock" id="stealthClock">00:00</div>
+                <div class="stealth-status">
+                    <span class="pulse-emerald-tiny"></span>
+                    <span>CCTV ACTIVE • RECORDING</span>
                 </div>
-                <div class="stealth-hint">Double tap to unlock</div>
+                <div class="stealth-tip">Double tap anywhere to unlock</div>
             </div>
         </section>
 
-        <!-- SCREEN 3: Dashboard View -->
-        <section id="dashboardScreen" class="screen">
-            <header class="app-header">
-                <div class="header-brand">
-                    <button id="btnBackToRoleFromDash" class="icon-btn-text">← Roles</button>
-                    <h2>CCTV Dashboard</h2>
+        <!-- ===================================== -->
+        <!-- SCREEN 3: Dashboard View              -->
+        <!-- ===================================== -->
+        <section id="dashboardScreen" class="view-screen">
+            <header class="top-nav">
+                <div class="brand-title">
+                    <button id="btnBackToRoleFromDash" class="back-pill-btn">← Roles</button>
+                    <div>
+                        <h2>SURVEILLANCE HUB</h2>
+                        <span class="sub-label">PAIRED CAMERAS</span>
+                    </div>
                 </div>
-                <button id="btnOpenPairModal" class="btn btn-sm btn-primary">+ Pair Camera</button>
+                <button id="btnOpenPairModal" class="cta-pill-btn">+ Pair Camera</button>
             </header>
 
-            <div class="dashboard-body">
-                <div id="noCamerasCard" class="empty-card">
-                    <div class="empty-icon">📹</div>
-                    <h3>No Cameras Paired Yet</h3>
-                    <p>Put your spare phone into CCTV mode on Wi-Fi, then scan its QR code here.</p>
-                    <button id="btnEmptyPairPrompt" class="btn btn-primary">+ Pair Your First Camera</button>
+            <main class="dashboard-content">
+                <div id="noCamerasCard" class="empty-state-card glass-panel">
+                    <div class="empty-shield">📹</div>
+                    <h3>No Cameras Paired</h3>
+                    <p>Put your CCTV phone into Camera Mode, then scan its QR code here to link permanently.</p>
+                    <button id="btnEmptyPairPrompt" class="cta-btn primary-btn">+ Link First Camera</button>
                 </div>
 
-                <div id="camerasList" class="cameras-grid"></div>
-            </div>
+                <div id="camerasList" class="cameras-stack-grid"></div>
+            </main>
         </section>
 
-        <!-- SCREEN 4: Live Monitor Player -->
-        <section id="monitorScreen" class="screen">
-            <div class="monitor-viewport">
-                <!-- Motion Alert Banner -->
-                <div id="motionBanner" class="motion-banner hidden">
-                    <span class="motion-pulse">🚨</span>
-                    <span><b>MOTION DETECTED!</b> Intruder activity detected.</span>
+        <!-- ===================================== -->
+        <!-- SCREEN 4: Live Monitor Player Screen  -->
+        <!-- ===================================== -->
+        <section id="monitorScreen" class="view-screen">
+            <div class="viewport-canvas">
+                <!-- Motion Detection Banner Alert -->
+                <div id="motionBanner" class="motion-alert-hud hidden">
+                    <div class="alert-icon-ring">🚨</div>
+                    <div class="alert-text-block">
+                        <h4>MOTION DETECTED!</h4>
+                        <p>Intruder activity sensed in surveillance area.</p>
+                    </div>
                 </div>
 
-                <video id="remoteVideo" autoplay playsinline></video>
+                <!-- Video Loading / Connecting State -->
+                <div id="monitorLoader" class="stream-connecting-layer">
+                    <div class="connecting-spinner"></div>
+                    <p id="connectingText">Establishing Direct Encrypted P2P Tunnel...</p>
+                    <span class="connecting-sub">Connecting to Camera via Google STUN & Cloud Relay</span>
+                </div>
 
-                <!-- Monitor Top Bar -->
-                <div class="monitor-topbar">
-                    <button id="btnBackFromMonitor" class="icon-btn glass">←</button>
-                    <div class="monitor-cam-title">
-                        <span class="badge-dot pulse-red"></span>
+                <!-- Live Stream Video -->
+                <video id="remoteVideo" autoplay playsinline muted></video>
+
+                <!-- Monitor HUD Top Bar -->
+                <div class="monitor-hud-header">
+                    <button id="btnBackFromMonitor" class="glass-round-btn">←</button>
+                    <div class="monitor-target-pill">
+                        <span class="status-orb pulse-red"></span>
                         <span id="monitorCamName">Live Camera</span>
                     </div>
-                    <div class="latency-pill" id="latencyPill">CLOUD P2P</div>
+                    <div class="p2p-badge" id="latencyPill">
+                        <span class="secure-glyph">🔒</span>
+                        <span>DIRECT P2P</span>
+                    </div>
                 </div>
 
-                <!-- Monitor Remote Controls -->
-                <div class="monitor-controls">
-                    <button id="btnRemoteTorch" class="remote-btn" title="Toggle CCTV Flashlight">
-                        <span class="btn-icon">🔦</span>
-                        <span class="btn-label">Flash</span>
+                <!-- Monitor Floating Control Dock -->
+                <div class="monitor-dock-bar glass-panel">
+                    <button id="btnRemoteTorch" class="remote-ctrl-btn" title="Toggle Camera Flashlight">
+                        <span class="ctrl-icon">🔦</span>
+                        <span class="ctrl-label">Flash</span>
                     </button>
-                    <button id="btnRemoteFlip" class="remote-btn" title="Flip CCTV Camera">
-                        <span class="btn-icon">🔄</span>
-                        <span class="btn-label">Flip</span>
+                    <button id="btnRemoteFlip" class="remote-ctrl-btn" title="Flip Camera Lens">
+                        <span class="ctrl-icon">🔄</span>
+                        <span class="ctrl-label">Flip</span>
                     </button>
-                    <button id="btnRemoteAudio" class="remote-btn" title="Mute/Unmute Audio">
-                        <span class="btn-icon" id="audioIcon">🔊</span>
-                        <span class="btn-label">Audio</span>
+                    <button id="btnRemoteAudio" class="remote-ctrl-btn" title="Mute or Listen to Room Audio">
+                        <span class="ctrl-icon" id="audioIcon">🔇</span>
+                        <span class="ctrl-label" id="audioLabel">Unmute</span>
                     </button>
-                    <button id="btnRemoteSiren" class="remote-btn danger" title="Trigger CCTV Alarm">
-                        <span class="btn-icon">🚨</span>
-                        <span class="btn-label">Siren</span>
+                    <button id="btnRemoteSiren" class="remote-ctrl-btn danger-ctrl" title="Sound Loud Alarm on CCTV">
+                        <span class="ctrl-icon">🚨</span>
+                        <span class="ctrl-label">Siren</span>
                     </button>
-                    <button id="btnRemoteSnapshot" class="remote-btn" title="Capture Snapshot">
-                        <span class="btn-icon">📸</span>
-                        <span class="btn-label">Photo</span>
+                    <button id="btnRemoteSnapshot" class="remote-ctrl-btn" title="Capture HD Snapshot">
+                        <span class="ctrl-icon">📸</span>
+                        <span class="ctrl-label">Photo</span>
                     </button>
-                    <button id="btnRemoteFullscreen" class="remote-btn" title="Fullscreen">
-                        <span class="btn-icon">⛶</span>
-                        <span class="btn-label">Full</span>
+                    <button id="btnRemoteFullscreen" class="remote-ctrl-btn" title="Fullscreen">
+                        <span class="ctrl-icon">⛶</span>
+                        <span class="ctrl-label">Full</span>
                     </button>
                 </div>
             </div>
@@ -236,48 +306,49 @@
     </div>
 
     <!-- Pair Modal (QR Scanner & Manual Entry) -->
-    <div id="pairModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3>Pair CCTV Camera</h3>
-                <button id="btnClosePairModal" class="close-btn">✕</button>
+    <div id="pairModal" class="modal-backdrop hidden">
+        <div class="modal-dialog-card glass-panel">
+            <div class="modal-dialog-header">
+                <h3>LINK NEW CAMERA</h3>
+                <button id="btnClosePairModal" class="close-x-btn">✕</button>
             </div>
-            <div class="pair-tabs">
-                <button class="pair-tab active" id="tabScanQR">Scan QR Code</button>
-                <button class="pair-tab" id="tabManual">Manual Code</button>
+
+            <div class="tab-pill-switcher">
+                <button class="tab-btn active" id="tabScanQR">Scan QR</button>
+                <button class="tab-btn" id="tabManual">Manual Code</button>
             </div>
 
             <!-- Tab 1: QR Scanner -->
-            <div id="scannerSection" class="tab-content active">
-                <div class="scanner-container">
+            <div id="scannerSection" class="tab-pane active">
+                <div class="scanner-frame-wrapper">
                     <video id="scannerVideo" autoplay playsinline muted></video>
-                    <div class="scanner-overlay">
-                        <div class="scanner-frame"></div>
+                    <div class="scanner-crosshair-overlay">
+                        <div class="crosshair-box"></div>
                     </div>
                 </div>
-                <p class="scan-instructions">Point your camera at the CCTV phone's screen to pair automatically.</p>
+                <p class="scanner-caption">Align CCTV screen's QR code within the frame.</p>
             </div>
 
             <!-- Tab 2: Manual Entry -->
-            <div id="manualSection" class="tab-content">
-                <div class="form-group">
+            <div id="manualSection" class="tab-pane">
+                <div class="input-field-group">
                     <label>Camera Code</label>
                     <input type="text" id="inputCamCode" placeholder="e.g. CAM-8491" autocomplete="off" autocapitalize="characters">
                 </div>
-                <div class="form-group">
-                    <label>Secret Pairing Key</label>
+                <div class="input-field-group">
+                    <label>Secret Key</label>
                     <input type="password" id="inputCamSecret" placeholder="Enter Secret Key">
                 </div>
-                <div class="form-group">
-                    <label>Camera Name (Optional)</label>
-                    <input type="text" id="inputCamCustomName" placeholder="e.g. Living Room">
+                <div class="input-field-group">
+                    <label>Camera Label (Optional)</label>
+                    <input type="text" id="inputCamCustomName" placeholder="e.g. Living Room, Main Gate">
                 </div>
-                <button id="btnSubmitManualPair" class="btn btn-primary full-width">Pair Camera</button>
+                <button id="btnSubmitManualPair" class="cta-btn primary-btn full-width">Connect & Save Camera</button>
             </div>
         </div>
     </div>
 
-    <!-- Scripts (100% Client-Side, No Backend Server Required!) -->
+    <!-- Core Scripts (100% Client-Side Serverless) -->
     <script src="vendor/qrcode.js"></script>
     <script src="vendor/jsQR.js"></script>
     <script src="vendor/peerjs.min.js"></script>

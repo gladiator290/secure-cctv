@@ -1,11 +1,14 @@
-// 100% Serverless Peer-to-Peer CCTV & Dashboard System
-// Powered by WebRTC & PeerJS Cloud (Zero Home Server / Laptop Needed)
+// ==========================================================
+// VANGUARD SECURE CCTV & MONITOR P2P ENGINE (v2.0)
+// High-Reliability WebRTC Cloud P2P Streaming Engine
+// ==========================================================
 
 (function () {
     'use strict';
 
-    // DOM Elements
+    // DOM Elements: PIN Lock
     const pinScreen = document.getElementById('pinScreen');
+    const pinTitle = document.getElementById('pinTitle');
     const pinSubtext = document.getElementById('pinSubtext');
     const pinError = document.getElementById('pinError');
     const pinDots = [
@@ -33,6 +36,8 @@
     const viewerCount = document.getElementById('viewerCount');
     const motionCanvas = document.getElementById('motionCanvas');
     const stealthClock = document.getElementById('stealthClock');
+    const cctvResDisplay = document.getElementById('cctvResDisplay');
+    const cctvFpsDisplay = document.getElementById('cctvFpsDisplay');
 
     // Dashboard Elements
     const camerasList = document.getElementById('camerasList');
@@ -42,8 +47,12 @@
     const remoteVideo = document.getElementById('remoteVideo');
     const monitorCamName = document.getElementById('monitorCamName');
     const motionBanner = document.getElementById('motionBanner');
+    const monitorLoader = document.getElementById('monitorLoader');
+    const connectingText = document.getElementById('connectingText');
+    const audioIcon = document.getElementById('audioIcon');
+    const audioLabel = document.getElementById('audioLabel');
 
-    // State Variables
+    // State
     let enteredPin = '';
     let settingUpPin = false;
     let wakeLock = null;
@@ -55,8 +64,8 @@
     let cctvSecret = null;
     let cctvFacingMode = 'environment';
     let cctvTorchOn = false;
-    let activeCalls = new Map();
-    let activeConnections = new Map();
+    let activeCalls = new Map();         // peerId => call
+    let activeDataConns = new Map();     // peerId => conn
     let motionInterval = null;
     let lastFrameData = null;
 
@@ -67,36 +76,41 @@
     let currentConn = null;
     let scannerStream = null;
     let scannerScanInterval = null;
-    let isMuted = false;
+    let isMuted = true; // Start muted to guarantee mobile Chrome autoplay
 
-    // WebRTC Free STUN Configuration
+    // High Reliability STUN / TURN configuration
     const peerOptions = {
         debug: 1,
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
             ]
         }
     };
 
-    // Helper: Build safe peer ID
     function getCCTVPeerId(code, secret) {
-        return `cctv-${code.toLowerCase().replace(/[^a-z0-9]/g, '')}-${secret.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+        const cleanCode = code.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanSecret = secret.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return `cctv-${cleanCode}-${cleanSecret}`;
     }
 
     // ==========================================
-    // 1. PIN SECURITY & AUTHENTICATION
+    // 1. PIN SECURITY & MASTER AUTH
     // ==========================================
     function checkPinSetup() {
         const storedPin = localStorage.getItem('cctv_master_pin');
         if (!storedPin) {
             settingUpPin = true;
-            pinSubtext.innerText = 'Create 4-Digit Security Master PIN';
+            pinTitle.innerText = 'CREATE PIN';
+            pinSubtext.innerText = 'Set a 4-Digit Security Master PIN';
         } else {
             settingUpPin = false;
-            pinSubtext.innerText = 'Enter Master PIN to continue';
+            pinTitle.innerText = 'SECURE CCTV';
+            pinSubtext.innerText = 'Enter 4-Digit Security Master PIN';
         }
         showPinScreen();
     }
@@ -136,7 +150,7 @@
         const storedPin = localStorage.getItem('cctv_master_pin');
         if (settingUpPin) {
             localStorage.setItem('cctv_master_pin', enteredPin);
-            showToast('Master PIN set successfully!');
+            showToast('✓ Master PIN saved successfully');
             hidePinScreen();
         } else {
             if (enteredPin === storedPin) {
@@ -152,7 +166,7 @@
         }
     }
 
-    document.querySelectorAll('.num-btn[data-val]').forEach(btn => {
+    document.querySelectorAll('.num-key[data-val]').forEach(btn => {
         btn.addEventListener('click', () => handlePinInput(btn.getAttribute('data-val')));
     });
 
@@ -175,7 +189,7 @@
     });
 
     // ==========================================
-    // 2. NAVIGATION & SCREEN MANAGEMENT
+    // 2. NAVIGATION & UI HELPERS
     // ==========================================
     function showScreen(screen) {
         [roleScreen, cctvScreen, dashboardScreen, monitorScreen].forEach(s => s.classList.remove('active'));
@@ -194,7 +208,7 @@
     document.getElementById('btnBackFromMonitor').addEventListener('click', exitMonitorMode);
 
     // ==========================================
-    // 3. CCTV CAMERA MODE (Broadcaster)
+    // 3. CCTV CAMERA MODE (Transmitter Node)
     // ==========================================
     async function startCCTVMode() {
         cctvCameraCode = localStorage.getItem('cctv_camera_code');
@@ -202,7 +216,7 @@
 
         if (!cctvCameraCode || !cctvSecret) {
             cctvCameraCode = 'CAM-' + Math.floor(1000 + Math.random() * 9000);
-            cctvSecret = Math.random().toString(36).substring(2, 10);
+            cctvSecret = Math.random().toString(36).substring(2, 8);
             localStorage.setItem('cctv_camera_code', cctvCameraCode);
             localStorage.setItem('cctv_camera_secret', cctvSecret);
         }
@@ -219,8 +233,9 @@
             renderPairingQR();
             startMotionDetection();
             showScreen(cctvScreen);
+            showToast('📹 Camera Live & Broadcasting');
         } catch (err) {
-            alert('Camera Permission Error: ' + err.message + '\nPlease allow camera access.');
+            alert('Camera Permission Error: ' + err.message + '\nPlease grant Camera & Microphone permissions.');
             showScreen(roleScreen);
         }
     }
@@ -233,74 +248,127 @@
         const constraints = {
             video: {
                 facingMode: cctvFacingMode,
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-                frameRate: { ideal: 25 }
+                width: { ideal: 1280, max: 1920 },
+                height: { ideal: 720, max: 1080 },
+                frameRate: { ideal: 25, max: 30 }
             },
-            audio: true
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
         };
 
         cctvStream = await navigator.mediaDevices.getUserMedia(constraints);
         cctvVideo.srcObject = cctvStream;
+
+        // Telemetry
+        const track = cctvStream.getVideoTracks()[0];
+        if (track) {
+            const s = track.getSettings();
+            if (s.width && s.height) {
+                cctvResDisplay.innerText = `${s.width}x${s.height}`;
+            }
+            if (s.frameRate) {
+                cctvFpsDisplay.innerText = `${Math.round(s.frameRate)} FPS`;
+            }
+        }
     }
 
     function initCCTVPeer() {
-        if (peer) peer.destroy();
+        if (peer) {
+            try { peer.destroy(); } catch (e) {}
+        }
 
         const peerId = getCCTVPeerId(cctvCameraCode, cctvSecret);
+        console.log('[CCTV] Registering Peer ID:', peerId);
         peer = new Peer(peerId, peerOptions);
 
         peer.on('open', (id) => {
-            console.log('[PeerJS Cloud Connected] CCTV ID:', id);
-            showToast('CCTV Online & Broadcasting on Cloud P2P');
+            console.log('[CCTV] Online with Cloud ID:', id);
         });
 
-        // Incoming Video Calls from Dashboards
-        peer.on('call', (call) => {
-            console.log('Incoming call from dashboard:', call.peer);
-            call.answer(cctvStream);
-
-            activeCalls.set(call.peer, call);
-            viewerCount.innerText = activeCalls.size;
-
-            call.on('close', () => {
-                activeCalls.delete(call.peer);
-                viewerCount.innerText = activeCalls.size;
-            });
-            call.on('error', () => {
-                activeCalls.delete(call.peer);
-                viewerCount.innerText = activeCalls.size;
-            });
-        });
-
-        // Incoming Data Connections (Remote Commands: Torch, Flip, Siren)
+        // 1. Data Connection Handler: Dashboard sends commands or stream requests
         peer.on('connection', (conn) => {
-            console.log('Control connection from dashboard:', conn.peer);
-            activeConnections.set(conn.peer, conn);
+            console.log('[CCTV] Dashboard connected to data channel:', conn.peer);
+            activeDataConns.set(conn.peer, conn);
 
             conn.on('data', (data) => {
-                if (data.command === 'torch') toggleTorch(data.value);
-                if (data.command === 'flip') flipCCTVCamera();
-                if (data.command === 'siren') playSirenAlert();
-                if (data.command === 'stealth') enterStealthMode();
+                console.log('[CCTV] Received command:', data);
+                if (data.type === 'request_stream') {
+                    // Call dashboard with local camera stream!
+                    callDashboardWithStream(conn.peer);
+                } else if (data.command === 'torch') {
+                    toggleTorch(data.value);
+                } else if (data.command === 'flip') {
+                    flipCCTVCamera();
+                } else if (data.command === 'siren') {
+                    playSirenAlert();
+                } else if (data.command === 'stealth') {
+                    enterStealthMode();
+                }
             });
 
-            conn.on('close', () => activeConnections.delete(conn.peer));
-            conn.on('error', () => activeConnections.delete(conn.peer));
+            conn.on('close', () => {
+                activeDataConns.delete(conn.peer);
+                updateViewerCount();
+            });
+
+            conn.on('error', () => {
+                activeDataConns.delete(conn.peer);
+                updateViewerCount();
+            });
+        });
+
+        // 2. Incoming Call Fallback: If dashboard initiates a call
+        peer.on('call', (call) => {
+            console.log('[CCTV] Incoming call from dashboard:', call.peer);
+            call.answer(cctvStream);
+            registerCall(call);
         });
 
         peer.on('error', (err) => {
-            console.warn('PeerJS Error:', err.type, err.message);
+            console.warn('[CCTV] Peer error:', err.type, err.message);
             if (err.type === 'unavailable-id') {
-                // If ID is busy, regenerate secret
-                cctvSecret = Math.random().toString(36).substring(2, 10);
+                // Generate a fresh secret if collision occurs
+                cctvSecret = Math.random().toString(36).substring(2, 8);
                 localStorage.setItem('cctv_camera_secret', cctvSecret);
                 initCCTVPeer();
             }
         });
     }
 
-    // Client-Side QR Code Generator (100% Offline / Serverless)
+    function callDashboardWithStream(dashboardPeerId) {
+        if (!peer || !cctvStream) return;
+        console.log('[CCTV] Calling dashboard with video stream:', dashboardPeerId);
+
+        const call = peer.call(dashboardPeerId, cctvStream);
+        if (call) {
+            registerCall(call);
+        }
+    }
+
+    function registerCall(call) {
+        activeCalls.set(call.peer, call);
+        updateViewerCount();
+
+        call.on('close', () => {
+            activeCalls.delete(call.peer);
+            updateViewerCount();
+        });
+
+        call.on('error', () => {
+            activeCalls.delete(call.peer);
+            updateViewerCount();
+        });
+    }
+
+    function updateViewerCount() {
+        const count = Math.max(activeCalls.size, activeDataConns.size);
+        viewerCount.innerText = count;
+    }
+
+    // Client-side QR generator
     function renderPairingQR() {
         const pairData = JSON.stringify({
             type: 'cctv_pair',
@@ -321,7 +389,7 @@
         }
     }
 
-    // Torch / Flashlight toggle
+    // Remote Camera Controls
     async function toggleTorch(forceState) {
         if (!cctvStream) return;
         const videoTrack = cctvStream.getVideoTracks()[0];
@@ -333,18 +401,17 @@
             await videoTrack.applyConstraints({
                 advanced: [{ torch: cctvTorchOn }]
             });
-            showToast(cctvTorchOn ? 'Flashlight ON' : 'Flashlight OFF');
+            showToast(cctvTorchOn ? '🔦 Flashlight ON' : 'Flashlight OFF');
         } else {
-            showToast('Flashlight not supported on this lens');
+            showToast('Torch not supported on this lens');
         }
     }
 
-    // Flip Front/Back Camera
     async function flipCCTVCamera() {
         cctvFacingMode = cctvFacingMode === 'environment' ? 'user' : 'environment';
         await initCCTVCamera();
 
-        // Update senders for active dashboard calls
+        // Update tracks in active calls
         activeCalls.forEach((call) => {
             if (call.peerConnection) {
                 const senders = call.peerConnection.getSenders();
@@ -354,10 +421,10 @@
                 });
             }
         });
-        showToast('Camera flipped');
+        showToast('🔄 Camera flipped');
     }
 
-    // Motion Detection Algorithm (Canvas Differencing)
+    // Motion Detection via Canvas frame difference
     function startMotionDetection() {
         const ctx = motionCanvas.getContext('2d', { willReadFrequently: true });
         motionCanvas.width = 64;
@@ -377,25 +444,25 @@
                     const rDiff = Math.abs(frame.data[i] - lastFrameData.data[i]);
                     const gDiff = Math.abs(frame.data[i + 1] - lastFrameData.data[i + 1]);
                     const bDiff = Math.abs(frame.data[i + 2] - lastFrameData.data[i + 2]);
-                    if (rDiff + gDiff + bDiff > 80) {
+                    if (rDiff + gDiff + bDiff > 75) {
                         diffCount++;
                     }
                 }
 
-                // If > 12% pixels changed, send motion alert to all connected dashboards
-                if (diffCount / totalPixels > 0.12) {
-                    activeConnections.forEach((conn) => {
+                if (diffCount / totalPixels > 0.10) {
+                    // Motion detected! Broadcast alert to all connected dashboards
+                    activeDataConns.forEach((conn) => {
                         if (conn.open) {
-                            conn.send({ type: 'motion', timestamp: Date.now() });
+                            conn.send({ type: 'motion_alert', timestamp: Date.now() });
                         }
                     });
                 }
             }
             lastFrameData = frame;
-        }, 600);
+        }, 500);
     }
 
-    // Stealth Mode (Black Screen)
+    // OLED Stealth Mode
     function enterStealthMode() {
         stealthScreen.classList.remove('hidden');
         stealthScreen.classList.add('active');
@@ -423,7 +490,6 @@
         lastTapTime = currentTime;
     });
 
-    // CCTV Controls Event Listeners
     document.getElementById('btnCCTVStealth').addEventListener('click', enterStealthMode);
     document.getElementById('btnCCTVTorch').addEventListener('click', () => toggleTorch());
     document.getElementById('btnCCTVFlip').addEventListener('click', flipCCTVCamera);
@@ -438,7 +504,9 @@
             if (!pinScreen.classList.contains('active')) {
                 if (cctvStream) cctvStream.getTracks().forEach(t => t.stop());
                 if (motionInterval) clearInterval(motionInterval);
-                if (peer) peer.destroy();
+                if (peer) {
+                    try { peer.destroy(); } catch (e) {}
+                }
                 releaseWakeLock();
                 showScreen(roleScreen);
                 verifyPin = origVerify;
@@ -447,7 +515,7 @@
     });
 
     // ==========================================
-    // 4. DASHBOARD MODE (Monitor)
+    // 4. DASHBOARD VIEW (Monitor Hub)
     // ==========================================
     function startDashboardMode() {
         renderPairedCameras();
@@ -461,35 +529,35 @@
         } else {
             noCamerasCard.style.display = 'none';
             pairedCameras.forEach((cam, index) => {
-                const card = document.createElement('div');
-                card.className = 'cam-item-card';
-                card.innerHTML = `
-                    <div class="cam-info">
+                const tile = document.createElement('div');
+                tile.className = 'camera-tile';
+                tile.innerHTML = `
+                    <div class="tile-info">
                         <h4>${cam.name || 'CCTV Camera'}</h4>
-                        <div class="cam-code-tag">
-                            <span class="badge-dot pulse"></span>
+                        <div class="tile-meta">
+                            <span class="status-orb pulse-emerald"></span>
                             <span>${cam.code}</span>
                         </div>
                     </div>
-                    <div class="cam-actions">
-                        <button class="btn btn-sm btn-primary" onclick="window.connectLiveCamera(${index})">View Live</button>
-                        <button class="icon-btn" onclick="window.deletePairedCamera(${index})" title="Delete">🗑</button>
+                    <div class="tile-actions">
+                        <button class="tile-connect-btn" onclick="window.connectLiveCamera(${index})">View Live →</button>
+                        <button class="tile-del-btn" onclick="window.deletePairedCamera(${index})" title="Delete Camera">🗑</button>
                     </div>
                 `;
-                camerasList.appendChild(card);
+                camerasList.appendChild(tile);
             });
         }
     }
 
     window.deletePairedCamera = function (index) {
-        if (confirm('Delete this paired camera?')) {
+        if (confirm('Delete this paired camera from your dashboard?')) {
             pairedCameras.splice(index, 1);
             localStorage.setItem('cctv_paired_cameras', JSON.stringify(pairedCameras));
             renderPairedCameras();
         }
     };
 
-    // Pair Modal
+    // Pairing Modal
     document.getElementById('btnOpenPairModal').addEventListener('click', openPairModal);
     document.getElementById('btnEmptyPairPrompt').addEventListener('click', openPairModal);
     document.getElementById('btnClosePairModal').addEventListener('click', closePairModal);
@@ -598,11 +666,11 @@
 
         closePairModal();
         renderPairedCameras();
-        showToast('Camera paired successfully!');
+        showToast('✓ Camera linked successfully!');
     }
 
     // ==========================================
-    // 5. LIVE MONITOR VIEWER (Receiver)
+    // 5. LIVE MONITOR VIEWER (WebRTC Receiver)
     // ==========================================
     window.connectLiveCamera = function (index) {
         activeCamera = pairedCameras[index];
@@ -611,75 +679,170 @@
         monitorCamName.innerText = activeCamera.name;
         showScreen(monitorScreen);
 
-        if (peer) peer.destroy();
+        // Show connecting overlay
+        monitorLoader.classList.remove('hidden');
+        connectingText.innerText = 'Locating Camera via Cloud P2P...';
+
+        if (peer) {
+            try { peer.destroy(); } catch (e) {}
+        }
+
+        // Initialize unique dashboard peer
         peer = new Peer(peerOptions);
 
-        peer.on('open', () => {
+        peer.on('open', (dashPeerId) => {
             const targetPeerId = getCCTVPeerId(activeCamera.code, activeCamera.secret);
-            console.log('Calling CCTV camera:', targetPeerId);
+            console.log('[Dashboard] Connecting to CCTV node:', targetPeerId);
+            connectingText.innerText = 'Connecting to camera node...';
 
-            // Connect video/audio call
-            currentCall = peer.call(targetPeerId, null);
+            // 1. Establish reliable data channel
+            currentConn = peer.connect(targetPeerId, { reliable: true });
 
-            currentCall.on('stream', (remoteStream) => {
-                console.log('Received remote CCTV stream!');
-                remoteVideo.srcObject = remoteStream;
+            currentConn.on('open', () => {
+                console.log('[Dashboard] Data channel open! Requesting video stream...');
+                connectingText.innerText = 'Requesting video stream from camera...';
+                currentConn.send({ type: 'request_stream', dashboardPeerId: dashPeerId });
             });
 
-            currentCall.on('close', () => {
-                showToast('Camera stream closed');
-                exitMonitorMode();
-            });
-
-            currentCall.on('error', (err) => {
-                alert('Connection error: Camera is offline or unreachable.');
-                exitMonitorMode();
-            });
-
-            // Connect control data channel
-            currentConn = peer.connect(targetPeerId);
             currentConn.on('data', (data) => {
-                if (data.type === 'motion') {
+                if (data.type === 'motion_alert') {
                     showMotionAlert();
                 }
             });
+
+            currentConn.on('close', () => {
+                console.log('[Dashboard] Connection closed by camera');
+            });
+
+            currentConn.on('error', (err) => {
+                console.error('[Dashboard] Data conn error:', err);
+            });
+
+            // 2. Incoming call listener (CCTV calls us with video stream!)
+            peer.on('call', (call) => {
+                console.log('[Dashboard] Incoming media call from CCTV camera!');
+                connectingText.innerText = 'Receiving video frames...';
+                currentCall = call;
+
+                call.answer(); // Answer without sending local stream
+
+                call.on('stream', (remoteStream) => {
+                    console.log('[Dashboard] Received live remote stream! Attaching...');
+                    attachRemoteStream(remoteStream);
+                });
+
+                call.on('close', () => {
+                    showToast('Camera feed disconnected');
+                    exitMonitorMode();
+                });
+
+                call.on('error', (err) => {
+                    console.error('[Dashboard] Call error:', err);
+                });
+            });
+
+            // 3. Dual-call Fallback: If camera doesn't call back within 4s, dashboard initiates call
+            setTimeout(() => {
+                if (!remoteVideo.srcObject && peer && !peer.destroyed) {
+                    console.log('[Dashboard] Trying fallback direct call...');
+                    connectingText.innerText = 'Initiating fallback connection...';
+
+                    // Create dummy audio track for WebRTC offer compliance
+                    try {
+                        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = audioCtx.createOscillator();
+                        const dest = audioCtx.createMediaStreamDestination();
+                        osc.connect(dest);
+                        osc.start();
+                        const dummyStream = dest.stream;
+
+                        const fallbackCall = peer.call(targetPeerId, dummyStream);
+                        if (fallbackCall) {
+                            currentCall = fallbackCall;
+                            fallbackCall.on('stream', (stream) => {
+                                attachRemoteStream(stream);
+                            });
+                        }
+                    } catch (e) {
+                        console.log('Fallback call note:', e);
+                    }
+                }
+            }, 3500);
         });
 
         peer.on('error', (err) => {
-            console.error('Peer error:', err);
-            alert('Camera is offline or not found.');
+            console.error('[Dashboard] Peer error:', err);
+            alert('Camera is currently offline or unreachable. Make sure the CCTV phone is in Camera Mode!');
             exitMonitorMode();
         });
     };
+
+    function attachRemoteStream(stream) {
+        remoteVideo.srcObject = stream;
+        remoteVideo.muted = isMuted; // Start muted to satisfy mobile autoplay policies
+
+        // Mobile autoplay play attempt
+        const playPromise = remoteVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                monitorLoader.classList.add('hidden');
+                showToast('✓ Live Feed Connected (Sub-Second Latency)');
+            }).catch((err) => {
+                console.warn('Autoplay with audio blocked. Playing muted...', err);
+                remoteVideo.muted = true;
+                isMuted = true;
+                updateAudioButton();
+                remoteVideo.play();
+                monitorLoader.classList.add('hidden');
+            });
+        } else {
+            monitorLoader.classList.add('hidden');
+        }
+
+        remoteVideo.onloadedmetadata = () => {
+            monitorLoader.classList.add('hidden');
+        };
+    }
 
     function sendRemoteCommand(cmd, val) {
         if (currentConn && currentConn.open) {
             currentConn.send({ command: cmd, value: val });
         } else {
-            showToast('Control connection pending...');
+            showToast('Reconnecting control channel...');
         }
     }
 
+    // Remote Controls
     document.getElementById('btnRemoteTorch').addEventListener('click', () => {
         sendRemoteCommand('torch');
-        showToast('Toggled Flashlight');
+        showToast('🔦 Flashlight toggled');
     });
 
     document.getElementById('btnRemoteFlip').addEventListener('click', () => {
         sendRemoteCommand('flip');
-        showToast('Flipped Camera Lens');
+        showToast('🔄 Lens flipped');
     });
 
     document.getElementById('btnRemoteAudio').addEventListener('click', () => {
         isMuted = !isMuted;
         remoteVideo.muted = isMuted;
-        document.getElementById('audioIcon').innerText = isMuted ? '🔇' : '🔊';
-        showToast(isMuted ? 'Audio Muted' : 'Audio Unmuted');
+        updateAudioButton();
+        showToast(isMuted ? 'Audio Muted' : '🔊 Listening to Room Audio');
     });
+
+    function updateAudioButton() {
+        if (isMuted) {
+            audioIcon.innerText = '🔇';
+            audioLabel.innerText = 'Unmute';
+        } else {
+            audioIcon.innerText = '🔊';
+            audioLabel.innerText = 'Mute';
+        }
+    }
 
     document.getElementById('btnRemoteSiren').addEventListener('click', () => {
         sendRemoteCommand('siren');
-        showToast('🚨 Triggered Alarm on CCTV!');
+        showToast('🚨 Siren Alarm Triggered on CCTV!');
     });
 
     document.getElementById('btnRemoteSnapshot').addEventListener('click', () => {
@@ -703,16 +866,16 @@
         ctx.drawImage(remoteVideo, 0, 0);
 
         const link = document.createElement('a');
-        link.download = `cctv_snapshot_${Date.now()}.jpg`;
-        link.href = snapCanvas.toDataURL('image/jpeg', 0.9);
+        link.download = `cctv_capture_${Date.now()}.jpg`;
+        link.href = snapCanvas.toDataURL('image/jpeg', 0.92);
         link.click();
-        showToast('📸 Snapshot saved!');
+        showToast('📸 HD Snapshot Saved to Phone');
     }
 
     function showMotionAlert() {
         motionBanner.classList.remove('hidden');
         playChimeAlert();
-        setTimeout(() => motionBanner.classList.add('hidden'), 4000);
+        setTimeout(() => motionBanner.classList.add('hidden'), 4500);
     }
 
     function playChimeAlert() {
@@ -722,13 +885,13 @@
             const gain = ctx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(880, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.3);
-            gain.gain.setValueAtTime(0.5, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.35);
+            gain.gain.setValueAtTime(0.6, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start();
-            osc.stop(ctx.currentTime + 0.3);
+            osc.stop(ctx.currentTime + 0.35);
         } catch (e) {}
     }
 
@@ -739,9 +902,9 @@
             const gain = ctx.createGain();
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(600, ctx.currentTime);
-            osc.frequency.linearRampToValueAtTime(1200, ctx.currentTime + 0.4);
-            osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.8);
-            gain.gain.setValueAtTime(0.8, ctx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1400, ctx.currentTime + 0.35);
+            osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.7);
+            gain.gain.setValueAtTime(0.9, ctx.currentTime);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start();
@@ -751,16 +914,16 @@
 
     function exitMonitorMode() {
         if (currentCall) {
-            currentCall.close();
+            try { currentCall.close(); } catch (e) {}
             currentCall = null;
         }
         if (currentConn) {
-            currentConn.close();
+            try { currentConn.close(); } catch (e) {}
             currentConn = null;
         }
         if (remoteVideo) remoteVideo.srcObject = null;
         if (peer) {
-            peer.destroy();
+            try { peer.destroy(); } catch (e) {}
             peer = null;
         }
         activeCamera = null;
@@ -768,7 +931,7 @@
     }
 
     // ==========================================
-    // 6. WAKE LOCK (Prevents Android Sleep)
+    // 6. ANDROID WAKELOCK (Continuous 24/7)
     // ==========================================
     async function requestWakeLock() {
         try {
@@ -785,7 +948,6 @@
         }
     }
 
-    // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }

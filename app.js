@@ -949,7 +949,18 @@
     }
 
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+            reg.update();
+            reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                installingWorker.onstatechange = () => {
+                    if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('App updated to latest version! Reloading...');
+                        window.location.reload();
+                    }
+                };
+            };
+        }).catch(() => {});
     }
 
     checkPinSetup();

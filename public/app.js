@@ -57,6 +57,8 @@
     let settingUpPin = false;
     let wakeLock = null;
     let peer = null;
+    let isCCTVModeActive = false;
+    let cctvInactivityTimer = null;
 
     // CCTV State
     let cctvStream = null;
@@ -225,7 +227,9 @@
         cctvCodeText.innerText = cctvCameraCode;
         cctvSecretText.innerText = cctvSecret;
 
+        isCCTVModeActive = true;
         requestWakeLock();
+        resetCCTVInactivity();
 
         try {
             await initCCTVCamera();
@@ -496,12 +500,37 @@
     document.getElementById('btnToggleQR').addEventListener('click', () => cctvQROverlay.classList.toggle('hidden'));
     document.getElementById('btnCloseQR').addEventListener('click', () => cctvQROverlay.classList.add('hidden'));
 
+    const btnCloseLockTip = document.getElementById('btnCloseLockTip');
+    if (btnCloseLockTip) {
+        btnCloseLockTip.addEventListener('click', () => {
+            const tip = document.getElementById('cctvLockTip');
+            if (tip) tip.classList.add('hidden');
+        });
+    }
+
+    let isCCTVFitContain = false;
+    const btnCCTVFit = document.getElementById('btnCCTVFit');
+    if (btnCCTVFit) {
+        btnCCTVFit.addEventListener('click', () => {
+            isCCTVFitContain = !isCCTVFitContain;
+            if (isCCTVFitContain) {
+                cctvVideo.classList.add('fit-contain');
+                showToast('📐 CCTV Full Wide-Angle (No Crop)');
+            } else {
+                cctvVideo.classList.remove('fit-contain');
+                showToast('📐 CCTV Full Screen Fill');
+            }
+        });
+    }
+
     document.getElementById('btnCCTVStop').addEventListener('click', () => {
         showPinScreen();
         const origVerify = verifyPin;
         verifyPin = function () {
             origVerify();
             if (!pinScreen.classList.contains('active')) {
+                isCCTVModeActive = false;
+                if (cctvInactivityTimer) clearTimeout(cctvInactivityTimer);
                 if (cctvStream) cctvStream.getTracks().forEach(t => t.stop());
                 if (motionInterval) clearInterval(motionInterval);
                 if (peer) {
@@ -931,27 +960,144 @@
     }
 
     // ==========================================
-    // 6. ANDROID WAKELOCK (Continuous 24/7)
+    // 6. ANDROID KEEP-AWAKE & AUTO-RECOVERY ENGINE (24/7 Continuous)
     // ==========================================
+    let keepAwakeMedia = null;
+
+    function startKeepAwakeMedia() {
+        try {
+            if (!keepAwakeMedia) {
+                keepAwakeMedia = document.createElement('video');
+                keepAwakeMedia.setAttribute('playsinline', '');
+                keepAwakeMedia.setAttribute('muted', '');
+                keepAwakeMedia.setAttribute('loop', '');
+                keepAwakeMedia.muted = true;
+                keepAwakeMedia.loop = true;
+                keepAwakeMedia.style.position = 'fixed';
+                keepAwakeMedia.style.width = '1px';
+                keepAwakeMedia.style.height = '1px';
+                keepAwakeMedia.style.opacity = '0.001';
+                keepAwakeMedia.style.pointerEvents = 'none';
+                keepAwakeMedia.style.zIndex = '-9999';
+                document.body.appendChild(keepAwakeMedia);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            let colorVal = 0;
+            setInterval(() => {
+                if (isCCTVModeActive && keepAwakeMedia) {
+                    colorVal = (colorVal + 1) % 255;
+                    ctx.fillStyle = `rgb(${colorVal},${colorVal},${colorVal})`;
+                    ctx.fillRect(0, 0, 16, 16);
+                }
+            }, 1000);
+
+            if (canvas.captureStream) {
+                keepAwakeMedia.srcObject = canvas.captureStream(1);
+                keepAwakeMedia.play().catch(() => {});
+            }
+        } catch (e) {
+            console.warn('[KeepAwake] Media loop fallback initialized');
+        }
+    }
+
+    function stopKeepAwakeMedia() {
+        if (keepAwakeMedia) {
+            try {
+                keepAwakeMedia.pause();
+                keepAwakeMedia.srcObject = null;
+                keepAwakeMedia.remove();
+            } catch (e) {}
+            keepAwakeMedia = null;
+        }
+    }
+
     async function requestWakeLock() {
         try {
-            if ('wakeLock' in navigator) {
+            if ('wakeLock' in navigator && !wakeLock) {
                 wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => {
+                    wakeLock = null;
+                    console.log('[WakeLock] Released by system');
+                    if (isCCTVModeActive && document.visibilityState === 'visible') {
+                        setTimeout(requestWakeLock, 1000);
+                    }
+                });
+                console.log('[WakeLock] Screen WakeLock active');
             }
-        } catch (err) {}
+        } catch (err) {
+            console.warn('[WakeLock] Error:', err);
+        }
+        startKeepAwakeMedia();
     }
 
     function releaseWakeLock() {
         if (wakeLock) {
-            wakeLock.release();
+            try { wakeLock.release(); } catch (e) {}
             wakeLock = null;
         }
+        stopKeepAwakeMedia();
     }
+
+    // Auto-Stealth Inactivity Timer (35s)
+    function resetCCTVInactivity() {
+        if (!isCCTVModeActive) return;
+        if (cctvInactivityTimer) clearTimeout(cctvInactivityTimer);
+        cctvInactivityTimer = setTimeout(() => {
+            if (isCCTVModeActive && !stealthScreen.classList.contains('active')) {
+                showToast('🌙 Auto-Stealth activated (saves power, camera stays 24/7 live)', 2500);
+                enterStealthMode();
+            }
+        }, 35000); // 35s of no touch -> auto enters OLED Stealth Mode
+    }
+
+    ['touchstart', 'mousedown', 'mousemove', 'keydown'].forEach(evt => {
+        window.addEventListener(evt, resetCCTVInactivity, { passive: true });
+    });
+
+    // Auto-Recovery on Screen Unlock / Foreground Resume
+    document.addEventListener('visibilitychange', async () => {
+        console.log('[App] Visibility change detected:', document.visibilityState);
+        if (document.visibilityState === 'visible') {
+            if (isCCTVModeActive) {
+                await requestWakeLock();
+                // Check if camera was killed by Android OS during lock/background
+                const videoTracks = cctvStream ? cctvStream.getVideoTracks() : [];
+                const isTrackDead = !videoTracks.length || videoTracks.some(t => t.readyState === 'ended' || !t.enabled);
+
+                if (isTrackDead) {
+                    console.warn('[CCTV] Camera hardware was suspended by OS. Restarting camera...');
+                    showToast('🔄 Restoring live camera hardware...', 2000);
+                    try {
+                        await initCCTVCamera();
+                        // Rebroadcast to active connections
+                        activeDataConns.forEach((conn) => {
+                            if (conn.open) callDashboardWithStream(conn.peer);
+                        });
+                    } catch (err) {
+                        console.error('[CCTV] Camera auto-recovery failed:', err);
+                    }
+                }
+            } else if (monitorScreen.classList.contains('active')) {
+                // If dashboard was viewing a camera when phone went to sleep
+                if (activeCamera && (!currentCall || currentCall.open === false)) {
+                    console.log('[Dashboard] Resuming live monitor stream...');
+                    showToast('🔄 Resuming live camera stream...', 1500);
+                    setTimeout(() => {
+                        if (activeCamera) window.connectLiveCamera(pairedCameras.indexOf(activeCamera));
+                    }, 500);
+                }
+            }
+        }
+    });
 
     // ==========================================
     // 7. ANTI-CACHE PURGE & VIEWPORT CONTROLS
     // ==========================================
-    const APP_VERSION = '2.2.0';
+    const APP_VERSION = '2.3.0';
     const lastVersion = localStorage.getItem('vanguard_app_version');
 
     // Auto-purge stale cache if version bumped

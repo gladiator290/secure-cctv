@@ -558,13 +558,71 @@ html, body {
 .cctv-hud-header {
     position: absolute;
     top: calc(12px + var(--safe-top));
-    left: 12px;
-    right: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 1000px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 30;
     gap: 6px;
+}
+
+.cctv-lock-tip-banner {
+    position: absolute;
+    top: calc(62px + var(--safe-top));
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 600px;
+    background: rgba(14, 165, 233, 0.2);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 14px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: #e0f2fe;
+    z-index: 28;
+    line-height: 1.35;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.cctv-lock-tip-banner.hidden {
+    display: none;
+}
+
+.tip-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.tip-body {
+    flex: 1;
+}
+
+.tip-body strong {
+    color: #38bdf8;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.tip-close-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .hud-pill {
@@ -617,7 +675,10 @@ html, body {
 .cctv-telemetry {
     position: absolute;
     bottom: calc(76px + var(--safe-bottom));
-    left: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 600px;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -640,8 +701,10 @@ html, body {
 .cctv-dock-bar, .monitor-dock-bar {
     position: absolute;
     bottom: calc(14px + var(--safe-bottom));
-    left: 10px;
-    right: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 20px);
+    max-width: 620px;
     border-radius: 20px;
     padding: 6px;
     display: flex;
@@ -1015,8 +1078,10 @@ html, body {
 .monitor-hud-header {
     position: absolute;
     top: calc(12px + var(--safe-top));
-    left: 12px;
-    right: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 1000px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1285,13 +1350,219 @@ html, body {
     transform: translateX(-50%) translateY(0);
 }
 
-/* Landscape Mode Optimization */
-@media (orientation: landscape) {
-    .cctv-dock-bar, .monitor-dock-bar {
-        bottom: 8px;
-        padding: 4px;
+/* ==========================================================
+   RESPONSIVE DESIGN: LARGE SCREENS (TABLETS, LAPTOPS, MONITORS >= 768px)
+   ========================================================== */
+@media (min-width: 768px) {
+    .role-hub-content {
+        max-width: 960px;
+        padding: 32px 24px;
+        gap: 22px;
     }
+
+    .role-cards-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: stretch;
+    }
+
+    .role-hero-card {
+        padding: 28px;
+        border-radius: 26px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .role-hero-card h2 {
+        font-size: 22px;
+    }
+
+    .role-hero-card p {
+        font-size: 13.5px;
+        line-height: 1.5;
+    }
+
+    .dashboard-content {
+        max-width: 1100px;
+        padding: 32px 24px;
+    }
+
+    .cameras-stack-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 18px;
+    }
+
+    .camera-tile {
+        padding: 18px 20px;
+        border-radius: 20px;
+    }
+
+    .cctv-dock-bar, .monitor-dock-bar {
+        max-width: 640px;
+        padding: 8px 14px;
+    }
+
     .remote-ctrl-btn {
+        padding: 8px 6px;
+    }
+
+    .ctrl-icon {
+        font-size: 22px;
+    }
+
+    .ctrl-label {
+        font-size: 11px;
+    }
+}
+
+/* ==========================================================
+   RESPONSIVE DESIGN: EXTRA COMPACT PHONES (<= 360px)
+   ========================================================== */
+@media (max-width: 360px) {
+    .brand-title h1, .brand-title h2 {
+        font-size: 13px;
+    }
+
+    .top-nav {
+        padding: var(--safe-top) 8px 0 8px;
+    }
+
+    .role-hub-content {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .role-hero-card {
+        padding: 14px;
+    }
+
+    .monitor-dock-bar {
+        padding: 3px 2px;
+        gap: 1px;
+    }
+
+    .remote-ctrl-btn {
+        padding: 4px 1px;
+    }
+
+    .ctrl-icon {
+        font-size: 16px;
+    }
+
+    .ctrl-label {
+        font-size: 8px;
+    }
+
+    .hud-pill {
+        padding: 4px 6px;
+        font-size: 9px;
+    }
+
+    .pin-card {
+        padding: 16px 12px;
+    }
+
+    .num-key {
+        height: 46px;
+        font-size: 18px;
+    }
+}
+
+/* ==========================================================
+   RESPONSIVE DESIGN: LANDSCAPE MOBILE MODE (height <= 520px)
+   ========================================================== */
+@media (orientation: landscape) and (max-height: 520px) {
+    .top-nav {
+        height: calc(44px + var(--safe-top));
+        padding: var(--safe-top) 16px 0 16px;
+    }
+
+    .role-hub-content {
+        padding: 12px 20px;
+        max-width: 840px;
+    }
+
+    .role-cards-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .role-hero-card {
+        padding: 14px 18px;
+        gap: 6px;
+    }
+
+    .role-hero-card h2 {
+        font-size: 15px;
+    }
+
+    .spec-pills {
+        display: none;
+    }
+
+    .cta-btn {
+        height: 38px;
+        font-size: 12px;
+    }
+
+    .cctv-hud-header, .monitor-hud-header {
+        top: calc(6px + var(--safe-top));
+        max-width: 720px;
+    }
+
+    .cctv-dock-bar, .monitor-dock-bar {
+        bottom: calc(6px + var(--safe-bottom));
+        padding: 4px 8px;
+        height: 42px;
+        max-width: 540px;
+    }
+
+    .cctv-telemetry {
+        bottom: calc(52px + var(--safe-bottom));
+        max-width: 540px;
+    }
+
+    .cctv-lock-tip-banner {
+        top: calc(46px + var(--safe-top));
+        padding: 4px 10px;
+        font-size: 10px;
+        max-width: 540px;
+    }
+
+    .remote-ctrl-btn {
+        flex-direction: row;
+        gap: 3px;
         padding: 2px 4px;
+    }
+
+    .ctrl-icon {
+        font-size: 14px;
+    }
+
+    .ctrl-label {
+        font-size: 9px;
+    }
+
+    .pin-card {
+        padding: 10px 16px;
+        max-width: 440px;
+    }
+
+    .pin-indicator-box {
+        margin: 8px 0;
+    }
+
+    .numpad-grid {
+        gap: 6px;
+    }
+
+    .num-key {
+        height: 34px;
+        font-size: 16px;
+        border-radius: 10px;
     }
 }

@@ -7,12 +7,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Secure CCTV & Remote Monitor</title>
-    <link rel="manifest" href="manifest.json?v=2.2.0">
+    <link rel="manifest" href="manifest.json?v=2.3.0">
     <meta name="theme-color" content="#06080e">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="styles.css?v=2.2.0">
+    <link rel="stylesheet" href="styles.css?v=2.3.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
 <body>
     <!-- PIN Security Lock Screen -->
     <div id="pinScreen" class="overlay-screen active">
-        <button id="btnPinRefresh" class="version-pill pin-refresh-pill" title="Tap to Clear Cache & Force Update">⚡ v2.2</button>
+        <button id="btnPinRefresh" class="version-pill pin-refresh-pill" title="Tap to Clear Cache & Force Update">⚡ v2.3</button>
         <div class="pin-card glass-panel">
             <div class="brand-shield">
                 <div class="shield-halo"></div>
@@ -72,7 +72,7 @@
                     </div>
                 </div>
                 <div class="nav-actions">
-                    <button id="btnForceRefresh" class="version-pill" title="Tap to Clear Cache & Force Update">⚡ v2.2</button>
+                    <button id="btnForceRefresh" class="version-pill" title="Tap to Clear Cache & Force Update">⚡ v2.3</button>
                     <button id="btnLockApp" class="glass-icon-btn" title="Lock App">🔒</button>
                 </div>
             </header>
@@ -153,6 +153,16 @@
                     </button>
                 </div>
 
+                <!-- 24/7 Keep-Awake & Stealth Guidance Banner -->
+                <div id="cctvLockTip" class="cctv-lock-tip-banner">
+                    <span class="tip-icon">💡</span>
+                    <div class="tip-body">
+                        <strong>24/7 Keep-Awake Active:</strong>
+                        <span>Phone power button mat dabayein (Android camera band kar deta hai). Screen 45s me auto-black ho jayegi ya niche <strong>🌙 Stealth</strong> dabayein.</span>
+                    </div>
+                    <button id="btnCloseLockTip" class="tip-close-btn" title="Dismiss">✕</button>
+                </div>
+
                 <!-- Stream Telemetry Overlay -->
                 <div class="cctv-telemetry">
                     <span id="cctvResDisplay">720p HD</span> •
@@ -198,6 +208,10 @@
                     <button id="btnCCTVFlip" class="dock-pill" title="Switch Lens">
                         <span class="icon">🔄</span>
                         <span class="label">Flip</span>
+                    </button>
+                    <button id="btnCCTVFit" class="dock-pill" title="Toggle Wide Angle">
+                        <span class="icon">📐</span>
+                        <span class="label">Fit</span>
                     </button>
                     <button id="btnCCTVStop" class="dock-pill danger-pill" title="Stop Surveillance">
                         <span class="icon">⏹</span>
@@ -362,9 +376,9 @@
     </div>
 
     <!-- Core Scripts (Cache-Busting Enabled) -->
-    <script src="vendor/qrcode.js?v=2.2.0"></script>
-    <script src="vendor/jsQR.js?v=2.2.0"></script>
-    <script src="vendor/peerjs.min.js?v=2.2.0"></script>
-    <script src="app.js?v=2.2.0"></script>
+    <script src="vendor/qrcode.js?v=2.3.0"></script>
+    <script src="vendor/jsQR.js?v=2.3.0"></script>
+    <script src="vendor/peerjs.min.js?v=2.3.0"></script>
+    <script src="app.js?v=2.3.0"></script>
 </body>
 </html>

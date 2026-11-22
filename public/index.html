@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secure CCTV & Remote Monitor</title>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=2.2.0">
     <meta name="theme-color" content="#06080e">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2.2.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -64,10 +64,13 @@
                     <span class="status-orb pulse-emerald"></span>
                     <div>
                         <h1>VANGUARD SECURE</h1>
-                        <span class="sub-label">P2P ENCRYPTED SURVEILLANCE</span>
+                        <span class="sub-label">P2P SURVEILLANCE</span>
                     </div>
                 </div>
-                <button id="btnLockApp" class="glass-icon-btn" title="Lock App">🔒</button>
+                <div class="nav-actions">
+                    <button id="btnForceRefresh" class="version-pill" title="Tap to Clear Cache & Force Update">⚡ v2.2</button>
+                    <button id="btnLockApp" class="glass-icon-btn" title="Lock App">🔒</button>
+                </div>
             </header>
 
             <main class="role-hub-content">
@@ -87,7 +90,7 @@
                         <h2>CCTV Camera Node</h2>
                         <p>Turn this spare phone into an intelligent surveillance camera broadcasting 24/7 on your home Wi-Fi.</p>
                         <div class="spec-pills">
-                            <span>🌙 Stealth OLED Mode</span>
+                            <span>🌙 Stealth OLED</span>
                             <span>⚡ WakeLock 24/7</span>
                             <span>🚨 Motion Sensor</span>
                         </div>
@@ -107,9 +110,9 @@
                         <h2>Command Dashboard</h2>
                         <p>Monitor your paired cameras from anywhere in the world on 4G, 5G or any external Wi-Fi network.</p>
                         <div class="spec-pills">
-                            <span>🔒 Zero Latency P2P</span>
-                            <span>🔦 Remote Torch</span>
-                            <span>📸 Live Snapshots</span>
+                            <span>🔒 Zero Latency</span>
+                            <span>🔦 Remote Flash</span>
+                            <span>📸 Live Snap</span>
                         </div>
                         <button class="cta-btn secondary-btn" id="btnStartDashboardMode">
                             <span>Open Dashboard</span>
@@ -132,7 +135,7 @@
                 <div class="cctv-hud-header">
                     <div class="hud-pill red-border">
                         <span class="rec-dot"></span>
-                        <span class="hud-text">LIVE REC</span>
+                        <span class="hud-text">REC</span>
                         <span class="mono-badge" id="cctvCodeBadge">CAM-0000</span>
                     </div>
 
@@ -142,7 +145,7 @@
                     </div>
 
                     <button id="btnToggleQR" class="hud-pill action-pill" title="Show Pairing Code">
-                        <span>📲 PAIR QR</span>
+                        <span>📲 PAIR</span>
                     </button>
                 </div>
 
@@ -150,7 +153,7 @@
                 <div class="cctv-telemetry">
                     <span id="cctvResDisplay">720p HD</span> •
                     <span id="cctvFpsDisplay">25 FPS</span> •
-                    <span class="secure-tag">E2E ENCRYPTED</span>
+                    <span class="secure-tag">ENCRYPTED</span>
                 </div>
 
                 <!-- Floating QR Pairing Overlay Card -->
@@ -182,7 +185,7 @@
                 <div class="cctv-dock-bar">
                     <button id="btnCCTVStealth" class="dock-pill highlight-pill" title="Blank screen for stealth battery saving">
                         <span class="icon">🌙</span>
-                        <span class="label">Stealth Mode</span>
+                        <span class="label">Stealth</span>
                     </button>
                     <button id="btnCCTVTorch" class="dock-pill" title="Toggle Flashlight">
                         <span class="icon">🔦</span>
@@ -222,7 +225,9 @@
                         <span class="sub-label">PAIRED CAMERAS</span>
                     </div>
                 </div>
-                <button id="btnOpenPairModal" class="cta-pill-btn">+ Pair Camera</button>
+                <div class="nav-actions">
+                    <button id="btnOpenPairModal" class="cta-pill-btn">+ Pair Camera</button>
+                </div>
             </header>
 
             <main class="dashboard-content">
@@ -254,8 +259,8 @@
                 <!-- Video Loading / Connecting State -->
                 <div id="monitorLoader" class="stream-connecting-layer">
                     <div class="connecting-spinner"></div>
-                    <p id="connectingText">Establishing Direct Encrypted P2P Tunnel...</p>
-                    <span class="connecting-sub">Connecting to Camera via Google STUN & Cloud Relay</span>
+                    <p id="connectingText">Connecting to Camera...</p>
+                    <span class="connecting-sub">Direct Encrypted P2P Tunnel</span>
                 </div>
 
                 <!-- Live Stream Video -->
@@ -287,6 +292,10 @@
                     <button id="btnRemoteAudio" class="remote-ctrl-btn" title="Mute or Listen to Room Audio">
                         <span class="ctrl-icon" id="audioIcon">🔇</span>
                         <span class="ctrl-label" id="audioLabel">Unmute</span>
+                    </button>
+                    <button id="btnRemoteFit" class="remote-ctrl-btn" title="Toggle Crop / Full Width Fit">
+                        <span class="ctrl-icon">📐</span>
+                        <span class="ctrl-label" id="fitLabel">Fit</span>
                     </button>
                     <button id="btnRemoteSiren" class="remote-ctrl-btn danger-ctrl" title="Sound Loud Alarm on CCTV">
                         <span class="ctrl-icon">🚨</span>
@@ -348,10 +357,10 @@
         </div>
     </div>
 
-    <!-- Core Scripts (100% Client-Side Serverless) -->
-    <script src="vendor/qrcode.js"></script>
-    <script src="vendor/jsQR.js"></script>
-    <script src="vendor/peerjs.min.js"></script>
-    <script src="app.js"></script>
+    <!-- Core Scripts (Cache-Busting Enabled) -->
+    <script src="vendor/qrcode.js?v=2.2.0"></script>
+    <script src="vendor/jsQR.js?v=2.2.0"></script>
+    <script src="vendor/peerjs.min.js?v=2.2.0"></script>
+    <script src="app.js?v=2.2.0"></script>
 </body>
 </html>

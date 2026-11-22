@@ -1,4 +1,4 @@
-const CACHE_NAME = 'secure-cctv-v3';
+const CACHE_NAME = 'vanguard-cctv-v2.2.0';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -14,12 +14,12 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Network First, fallback to cache (Ensures instant updates without reinstalling APK!)
+// Network-First with anti-stale cache fetching
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        fetch(event.request)
+        fetch(event.request, { cache: 'no-cache' })
             .then((networkResponse) => {
                 if (networkResponse && networkResponse.status === 200) {
                     const responseClone = networkResponse.clone();

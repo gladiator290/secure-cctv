@@ -948,14 +948,74 @@
         }
     }
 
+    // ==========================================
+    // 7. ANTI-CACHE PURGE & VIEWPORT CONTROLS
+    // ==========================================
+    const APP_VERSION = '2.2.0';
+    const lastVersion = localStorage.getItem('vanguard_app_version');
+
+    // Auto-purge stale cache if version bumped
+    if (lastVersion !== APP_VERSION) {
+        console.log(`Upgrading from ${lastVersion} to ${APP_VERSION}. Purging stale cache...`);
+        if ('caches' in window) {
+            caches.keys().then((keys) => {
+                keys.forEach(k => caches.delete(k));
+            });
+        }
+        localStorage.setItem('vanguard_app_version', APP_VERSION);
+    }
+
+    // Force Manual Cache Wipe & Refresh button
+    const btnForceRefresh = document.getElementById('btnForceRefresh');
+    if (btnForceRefresh) {
+        btnForceRefresh.addEventListener('click', async () => {
+            showToast('⚡ Purging cache & reloading...', 1500);
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                await Promise.all(keys.map(k => caches.delete(k)));
+            }
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (let r of regs) await r.unregister();
+            }
+            setTimeout(() => {
+                window.location.href = window.location.pathname + '?nocache=' + Date.now();
+            }, 300);
+        });
+    }
+
+    // Fit / Crop Toggle
+    let isFitContain = false;
+    const btnRemoteFit = document.getElementById('btnRemoteFit');
+    const fitLabel = document.getElementById('fitLabel');
+
+    function toggleFitMode() {
+        isFitContain = !isFitContain;
+        if (isFitContain) {
+            remoteVideo.classList.add('fit-contain');
+            if (fitLabel) fitLabel.innerText = 'Crop';
+            showToast('📐 Full Wide-Angle (No Crop)');
+        } else {
+            remoteVideo.classList.remove('fit-contain');
+            if (fitLabel) fitLabel.innerText = 'Fit';
+            showToast('📐 Filled Screen (Cover)');
+        }
+    }
+
+    if (btnRemoteFit) {
+        btnRemoteFit.addEventListener('click', toggleFitMode);
+    }
+    remoteVideo.addEventListener('dblclick', toggleFitMode);
+
+    // Service Worker Auto-Update
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then((reg) => {
+        navigator.serviceWorker.register('sw.js?v=' + APP_VERSION).then((reg) => {
             reg.update();
             reg.onupdatefound = () => {
                 const installingWorker = reg.installing;
                 installingWorker.onstatechange = () => {
                     if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('App updated to latest version! Reloading...');
+                        console.log('New version detected! Auto-reloading...');
                         window.location.reload();
                     }
                 };
